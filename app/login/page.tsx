@@ -27,7 +27,7 @@ export default function LoginPage() {
 
     const supabase = getClient()
 
-    const { error: authError } =
+    const { data: authData, error: authError } =
       mode === 'signin'
         ? await supabase.auth.signInWithPassword({ email, password })
         : await supabase.auth.signUp({ email, password })
@@ -38,7 +38,7 @@ export default function LoginPage() {
       return
     }
 
-    if (mode === 'signup') {
+    if (mode === 'signup' && !authData.session) {
       setError('Account created! Check your email to confirm, then sign in.')
       setMode('signin')
       setLoading(false)
