@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import { createBrowserSupabase } from '@/lib/supabase'
-import { Send, Loader2, MessageSquare, Sparkles, User } from 'lucide-react'
+import { Send, Loader2, MessageSquare, Sparkles } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 
 const supabase = createBrowserSupabase()
