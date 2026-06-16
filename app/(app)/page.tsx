@@ -228,7 +228,7 @@ export default function Home() {
         <CaptureBar userId={user.id} onCreate={mergeNote} />
       </section>
 
-      <NoteDetail note={selected} onClose={() => setSelected(null)} onArchive={archiveNote} onRestore={restoreNote} onUpdate={mergeNote} />
+      <NoteDetail note={selected} userId={user.id} onClose={() => setSelected(null)} onArchive={archiveNote} onRestore={restoreNote} onUpdate={mergeNote} />
       <ChatPanel userId={user.id} activeNote={selected} />
 
       {/* Onboarding modal — only shown to first-time users */}
