@@ -163,6 +163,7 @@ export function VoiceButton({ userId, onCreate, disabled }: Props) {
       relevance: 5,
       image_url: null,
       is_archived: false,
+      is_pinned: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
