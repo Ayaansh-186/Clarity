@@ -2,6 +2,7 @@
 
 import { Pin } from 'lucide-react'
 import { clusterColors, type Note } from '@/lib/types'
+import { TagChips } from '@/components/TagPicker'
 
 type Props = {
   note: Note
@@ -56,7 +57,7 @@ export function NoteCard({ note, onOpen, onTogglePin }: Props) {
       )}
 
       {/* Top row */}
-      <div className="mb-4 flex items-center justify-between gap-2 pr-7">
+      <div className="mb-3 flex items-center justify-between gap-2 pr-7">
         {colors ? (
           <span className="rounded-full px-2.5 py-0.5 text-xs font-medium capitalize" style={{ backgroundColor: colors.bg, color: colors.text }}>
             {note.cluster}
@@ -91,6 +92,13 @@ export function NoteCard({ note, onOpen, onTogglePin }: Props) {
       <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
         {note.raw_content}
       </p>
+
+      {/* Tags */}
+      {note.tags && note.tags.length > 0 && (
+        <div className="mt-3">
+          <TagChips tags={note.tags} />
+        </div>
+      )}
 
       {/* Relevance dots */}
       <div className="mt-auto flex items-center gap-1 pt-4">

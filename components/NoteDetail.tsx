@@ -4,17 +4,20 @@ import Image from 'next/image'
 import ReactMarkdown from 'react-markdown'
 import { Archive, Globe, GlobeLock, Loader2, Network, Sparkles, X, Copy, Check, RotateCcw, Pencil, Save, Clock, Pin } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import { clusterColors, type Note } from '@/lib/types'
+import { clusterColors, type Note, type Tag } from '@/lib/types'
 import { VersionHistoryPanel } from '@/components/VersionHistoryPanel'
+import { TagPicker, RemovableTagChip } from '@/components/TagPicker'
 
 type Props = {
   note: Note | null
   userId: string
+  allTags: Tag[]
   onClose: () => void
   onArchive: (id: string) => void
   onRestore: (id: string) => void
   onUpdate: (note: Note) => void
   onTogglePin?: (note: Note) => void
+  onTagCreated: (tag: Tag) => void
 }
 
 type DiagramNode = { id: string; label: string; children?: string[] }
@@ -54,7 +57,7 @@ function MindMap({ diagram }: { diagram: Diagram }) {
   )
 }
 
-export function NoteDetail({ note, userId, onClose, onArchive, onRestore, onUpdate, onTogglePin }: Props) {
+export function NoteDetail({ note, userId, allTags, onClose, onArchive, onRestore, onUpdate, onTogglePin, onTagCreated }: Props) {
   const [view, setView] = useState<'raw' | 'formatted' | 'diagram'>('raw')
   const [formatting, setFormatting] = useState(false)
   const [enhancing, setEnhancing] = useState(false)
@@ -71,6 +74,7 @@ export function NoteDetail({ note, userId, onClose, onArchive, onRestore, onUpda
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [showHistory, setShowHistory] = useState(false)
+  const [removingTagId, setRemovingTagId] = useState<string | null>(null)
 
   useEffect(() => {
     setEditing(false)
@@ -189,6 +193,23 @@ export function NoteDetail({ note, userId, onClose, onArchive, onRestore, onUpda
     setView('raw')
   }
 
+  function handleTagsChange(tags: Tag[]) {
+    onUpdate({ ...note!, tags })
+  }
+
+  async function removeTag(tagId: string) {
+    setRemovingTagId(tagId)
+    try {
+      const res = await fetch(`/api/notes/${note!.id}/tags?tag_id=${tagId}`, { method: 'DELETE' })
+      if (res.ok) {
+        const tags = await res.json()
+        onUpdate({ ...note!, tags })
+      }
+    } finally {
+      setRemovingTagId(null)
+    }
+  }
+
   return (
     <>
       <div className="fixed inset-y-0 right-0 z-50 w-full max-w-[440px] border-l border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950 flex flex-col">
@@ -281,6 +302,28 @@ export function NoteDetail({ note, userId, onClose, onArchive, onRestore, onUpda
               </div>
             )}
           </div>
+
+          {/* Tags */}
+          {!editing && (
+            <div className="mb-5 flex flex-wrap items-center gap-1.5">
+              {(note.tags ?? []).map(tag => (
+                <RemovableTagChip
+                  key={tag.id}
+                  tag={tag}
+                  busy={removingTagId === tag.id}
+                  onRemove={() => removeTag(tag.id)}
+                />
+              ))}
+              <TagPicker
+                userId={userId}
+                noteId={note.id}
+                noteTags={note.tags ?? []}
+                allTags={allTags}
+                onTagsChange={handleTagsChange}
+                onTagCreated={onTagCreated}
+              />
+            </div>
+          )}
 
           {/* View tabs */}
           {!editing && (

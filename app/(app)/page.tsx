@@ -11,7 +11,7 @@ import { NoteDetail } from '@/components/NoteDetail'
 import { OnboardingModal } from '@/components/OnboardingModal'
 import { Sidebar, type ViewKey } from '@/components/Sidebar'
 import { useOnboarding } from '@/lib/useOnboarding'
-import { clusters, type Note } from '@/lib/types'
+import { clusters, type Note, type Tag } from '@/lib/types'
 
 function getBrowserClient() {
   return createClient(
@@ -31,14 +31,17 @@ export default function Home() {
   const [selected, setSelected] = useState<Note | null>(null)
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [pinPending, setPinPending] = useState<Set<string>>(new Set())
+
+  // ── Tags state ───────────────────────────────────────────────────────────
+  const [tags, setTags] = useState<Tag[]>([])
+  const [activeTagId, setActiveTagId] = useState<string | null>(null)
 
   // Onboarding: pass null until we've loaded notes (prevents flash)
   const noteCount = loading ? null : allNotes.length
   const { shouldShow: showOnboarding, complete: completeOnboarding, dismiss: dismissOnboarding } = useOnboarding(noteCount)
 
-  // Fetch ALL notes for counts, and filtered notes for current view
-  const fetchNotes = useCallback(async (view = activeView, userId?: string) => {
+  // Fetch ALL notes for counts, and filtered notes for current view + active tag
+  const fetchNotes = useCallback(async (view = activeView, userId?: string, tagId = activeTagId) => {
     const uid = userId ?? user?.id
     if (!uid) return
 
@@ -49,10 +52,11 @@ export default function Home() {
       setAllNotes(all)
     }
 
-    // Fetch filtered notes for current view
+    // Fetch filtered notes for current view (+ tag, if one is active)
     const params = new URLSearchParams({ user_id: uid })
     if (view === 'archived') params.set('archived', 'true')
     if (clusters.includes(view as never)) params.set('cluster', view)
+    if (tagId) params.set('tag_id', tagId)
 
     const res = await fetch(`/api/notes?${params.toString()}`)
     if (res.ok) {
@@ -70,7 +74,14 @@ export default function Home() {
     }
 
     setLoading(false)
-  }, [activeView, user])
+  }, [activeView, activeTagId, user])
+
+  const fetchTags = useCallback(async (userId?: string) => {
+    const uid = userId ?? user?.id
+    if (!uid) return
+    const res = await fetch(`/api/tags?user_id=${uid}`)
+    if (res.ok) setTags(await res.json())
+  }, [user])
 
   useEffect(() => {
     const supabase = getBrowserClient()
@@ -79,6 +90,7 @@ export default function Home() {
       const u = { id: data.session.user.id, email: data.session.user.email }
       setUser(u)
       fetchNotes(activeView, u.id)
+      fetchTags(u.id)
     })
   }, [router])
 
@@ -87,6 +99,12 @@ export default function Home() {
     const interval = setInterval(() => fetchNotes(), 3000)
     return () => clearInterval(interval)
   }, [fetchNotes, user])
+
+  // Re-fetch notes whenever the active tag changes
+  useEffect(() => {
+    if (!user) return
+    fetchNotes(activeView, user.id, activeTagId)
+  }, [activeTagId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const counts = useMemo(() => {
     const result: Record<string, number> = {
@@ -105,12 +123,12 @@ export default function Home() {
     setNotes(curr => {
       const withoutTemp = curr.filter(n => !(n.id.startsWith('temp-') && n.raw_content === note.raw_content))
       const exists = withoutTemp.some(n => n.id === note.id)
-      return exists ? withoutTemp.map(n => n.id === note.id ? note : n) : [note, ...withoutTemp]
+      return exists ? withoutTemp.map(n => n.id === note.id ? { ...n, ...note } : n) : [note, ...withoutTemp]
     })
     setAllNotes(curr => {
       const withoutTemp = curr.filter(n => !(n.id.startsWith('temp-') && n.raw_content === note.raw_content))
       const exists = withoutTemp.some(n => n.id === note.id)
-      return exists ? withoutTemp.map(n => n.id === note.id ? note : n) : [note, ...withoutTemp]
+      return exists ? withoutTemp.map(n => n.id === note.id ? { ...n, ...note } : n) : [note, ...withoutTemp]
     })
   }
 
@@ -119,11 +137,36 @@ export default function Home() {
     completeOnboarding()
   }
 
+  // ── Tag handlers ─────────────────────────────────────────────────────────
+  async function createTag(name: string) {
+    if (!user) return
+    const res = await fetch('/api/tags', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user.id, name }),
+    })
+    if (res.ok) {
+      const tag: Tag = await res.json()
+      setTags(curr => curr.some(t => t.id === tag.id) ? curr : [...curr, tag].sort((a, b) => a.name.localeCompare(b.name)))
+    }
+  }
+
+  async function deleteTag(tagId: string) {
+    setTags(curr => curr.filter(t => t.id !== tagId))
+    if (activeTagId === tagId) setActiveTagId(null)
+    await fetch(`/api/tags/${tagId}`, { method: 'DELETE' })
+    // Notes may have lost a tag — refresh to keep chips accurate
+    fetchNotes()
+  }
+
+  function handleTagCreated(tag: Tag) {
+    setTags(curr => curr.some(t => t.id === tag.id) ? curr : [...curr, tag].sort((a, b) => a.name.localeCompare(b.name)))
+  }
+
   async function togglePin(note: Note) {
     const nextPinned = !note.is_pinned
 
     // Optimistic update
-    setPinPending(curr => new Set(curr).add(note.id))
     setNotes(curr => curr.map(n => n.id === note.id ? { ...n, is_pinned: nextPinned } : n))
     setAllNotes(curr => curr.map(n => n.id === note.id ? { ...n, is_pinned: nextPinned } : n))
     setSelected(curr => curr?.id === note.id ? { ...curr, is_pinned: nextPinned } : curr)
@@ -136,17 +179,14 @@ export default function Home() {
       })
       if (res.ok) {
         const updated = await res.json()
-        mergeNote(updated)
+        mergeNote({ ...updated, tags: note.tags })
       } else {
-        // Revert on failure
         setNotes(curr => curr.map(n => n.id === note.id ? { ...n, is_pinned: note.is_pinned } : n))
         setAllNotes(curr => curr.map(n => n.id === note.id ? { ...n, is_pinned: note.is_pinned } : n))
       }
     } catch {
       setNotes(curr => curr.map(n => n.id === note.id ? { ...n, is_pinned: note.is_pinned } : n))
       setAllNotes(curr => curr.map(n => n.id === note.id ? { ...n, is_pinned: note.is_pinned } : n))
-    } finally {
-      setPinPending(curr => { const next = new Set(curr); next.delete(note.id); return next })
     }
   }
 
@@ -183,25 +223,37 @@ export default function Home() {
     work: 'Work', ideas: 'Ideas', personal: 'Personal', learning: 'Learning', health: 'Health'
   }
 
+  const activeTagName = activeTagId ? tags.find(t => t.id === activeTagId)?.name : null
+
   const displayedNotes = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
     if (!q) return notes
 
     const pool = activeView === 'archived' ? allNotes.filter(n => n.is_archived) : allNotes.filter(n => !n.is_archived)
+    const tagFiltered = activeTagId ? pool.filter(n => n.tags?.some(t => t.id === activeTagId)) : pool
 
-    return pool.filter(n => {
+    return tagFiltered.filter(n => {
       const title = (n.title ?? '').toLowerCase()
       const raw = n.raw_content.toLowerCase()
       const formatted = (n.formatted_content ?? '').toLowerCase()
       return title.includes(q) || raw.includes(q) || formatted.includes(q)
     })
-  }, [searchQuery, notes, allNotes, activeView])
+  }, [searchQuery, notes, allNotes, activeView, activeTagId])
 
   // Split into pinned / unpinned. Pinned section is hidden in the archived view
   // (archived notes shouldn't clutter a "pinned" shelf) and while searching.
   const showPinnedSection = activeView !== 'archived' && !searchQuery.trim()
   const pinnedNotes = showPinnedSection ? displayedNotes.filter(n => n.is_pinned) : []
   const unpinnedNotes = showPinnedSection ? displayedNotes.filter(n => !n.is_pinned) : displayedNotes
+
+  function changeView(view: ViewKey) {
+    setActiveView(view)
+    fetchNotes(view, undefined, activeTagId)
+  }
+
+  function changeTag(tagId: string | null) {
+    setActiveTagId(tagId)
+  }
 
   if (!user) return (
     <main className="grid min-h-screen place-items-center bg-white text-zinc-500 dark:bg-zinc-950">
@@ -217,15 +269,26 @@ export default function Home() {
         email={user.email}
         notes={allNotes}
         now={Date.now()}
-        onChangeView={(view) => { setActiveView(view); fetchNotes(view) }}
+        tags={tags}
+        activeTagId={activeTagId}
+        onChangeView={changeView}
+        onChangeTag={changeTag}
+        onCreateTag={createTag}
+        onDeleteTag={deleteTag}
         onSignOut={signOut}
       />
       <section className="flex min-h-screen flex-col">
         <header className="sticky top-0 z-10 border-b border-zinc-200 bg-white/90 px-5 py-4 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
           <div className="mx-auto flex max-w-5xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight">{viewTitle[activeView] ?? activeView}</h1>
-              <p className="mt-1 text-sm text-zinc-500">Drop the messy version. Clarity will keep sorting.</p>
+              <h1 className="text-2xl font-semibold tracking-tight">
+                {activeTagName ? `#${activeTagName}` : (viewTitle[activeView] ?? activeView)}
+              </h1>
+              <p className="mt-1 text-sm text-zinc-500">
+                {activeTagName
+                  ? <>Notes tagged <span className="font-medium">{activeTagName}</span> · <button onClick={() => setActiveTagId(null)} className="underline hover:text-zinc-700 dark:hover:text-zinc-300">clear filter</button></>
+                  : 'Drop the messy version. Clarity will keep sorting.'}
+              </p>
             </div>
             <div className="relative w-full sm:w-72">
               <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
@@ -252,7 +315,11 @@ export default function Home() {
               <div className="grid min-h-80 place-items-center text-center text-zinc-500">
                 <div>
                   <Sparkles className="mx-auto mb-3 h-7 w-7 text-zinc-400" />
-                  <p>{searchQuery ? `No notes match "${searchQuery}"` : 'Your mind is clear. Add your first thought below.'}</p>
+                  <p>
+                    {searchQuery ? `No notes match "${searchQuery}"`
+                      : activeTagName ? `No notes tagged "${activeTagName}" yet`
+                      : 'Your mind is clear. Add your first thought below.'}
+                  </p>
                 </div>
               </div>
             ) : (
@@ -301,11 +368,13 @@ export default function Home() {
       <NoteDetail
         note={selected}
         userId={user.id}
+        allTags={tags}
         onClose={() => setSelected(null)}
         onArchive={archiveNote}
         onRestore={restoreNote}
         onUpdate={mergeNote}
         onTogglePin={togglePin}
+        onTagCreated={handleTagCreated}
       />
       <ChatPanel userId={user.id} activeNote={selected} />
 

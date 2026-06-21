@@ -1,5 +1,14 @@
 export type Cluster = 'work' | 'ideas' | 'personal' | 'learning' | 'health'
 
+export type Tag = {
+  id: string
+  user_id: string
+  name: string
+  color: string
+  created_at: string
+  note_count?: number   // populated only by GET /api/tags
+}
+
 export type Note = {
   id: string
   user_id: string
@@ -13,6 +22,7 @@ export type Note = {
   is_pinned: boolean
   created_at: string
   updated_at: string
+  tags?: Tag[]   // populated by GET /api/notes, optional elsewhere
 }
 
 export const clusters: Cluster[] = ['work', 'ideas', 'personal', 'learning', 'health']
@@ -24,3 +34,9 @@ export const clusterColors: Record<string, { bg: string; text: string; dot: stri
   learning: { bg: '#E6F1FB', text: '#185FA5', dot: '#378ADD' },
   health:   { bg: '#EAF3DE', text: '#3B6D11', dot: '#639922' },
 }
+
+// Default palette offered when creating a new tag
+export const TAG_COLORS = [
+  '#6366F1', '#EC4899', '#F59E0B', '#10B981',
+  '#EF4444', '#A855F7', '#0EA5E9', '#84CC16',
+]

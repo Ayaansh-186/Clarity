@@ -38,19 +38,33 @@ export async function POST(request: NextRequest) {
     body: JSON.stringify({ note_id: note.id, content: note.raw_content }),
   }).catch((err) => console.error('CLUSTER ERROR:', err))
 
-  return NextResponse.json(note)
+  return NextResponse.json({ ...note, tags: [] })
 }
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl
 
-  const userId  = searchParams.get('user_id')
-  const cluster = searchParams.get('cluster')
-  const view    = searchParams.get('view')
+  const userId   = searchParams.get('user_id')
+  const cluster  = searchParams.get('cluster')
+  const view     = searchParams.get('view')
   const archived = searchParams.get('archived')
+  const tagId    = searchParams.get('tag_id')
 
   if (!userId) {
     return NextResponse.json({ error: 'user_id is required' }, { status: 400 })
+  }
+
+  // If filtering by tag, first resolve which note_ids carry that tag
+  let tagNoteIds: string[] | null = null
+  if (tagId) {
+    const { data: links } = await supabase
+      .from('note_tags')
+      .select('note_id')
+      .eq('tag_id', tagId)
+    tagNoteIds = (links ?? []).map(l => l.note_id)
+    if (tagNoteIds.length === 0) {
+      return NextResponse.json([]) // no notes have this tag
+    }
   }
 
   let query = supabase
@@ -72,15 +86,38 @@ export async function GET(request: NextRequest) {
     query = query.gte('relevance', 7)
   }
 
-  // Pinned notes always sort first, then by relevance desc, then newest first
-  const { data, error } = await query
-    .order('is_pinned',   { ascending: false })
-    .order('relevance',   { ascending: false })
-    .order('created_at',  { ascending: false })
+  if (tagNoteIds) {
+    query = query.in('id', tagNoteIds)
+  }
+
+  const { data: notes, error } = await query
+    .order('is_pinned',  { ascending: false })
+    .order('relevance',  { ascending: false })
+    .order('created_at', { ascending: false })
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json(data ?? [])
+  if (!notes || notes.length === 0) {
+    return NextResponse.json([])
+  }
+
+  // ── Embed tags for every note in one batched query ─────────────────────────
+  const noteIds = notes.map(n => n.id)
+  const { data: tagLinks } = await supabase
+    .from('note_tags')
+    .select('note_id, tags(*)')
+    .in('note_id', noteIds)
+
+  const tagsByNote: Record<string, unknown[]> = {}
+  for (const link of tagLinks ?? []) {
+    const row = link as unknown as { note_id: string; tags: unknown }
+    if (!tagsByNote[row.note_id]) tagsByNote[row.note_id] = []
+    if (row.tags) tagsByNote[row.note_id].push(row.tags)
+  }
+
+  const withTags = notes.map(n => ({ ...n, tags: tagsByNote[n.id] ?? [] }))
+
+  return NextResponse.json(withTags)
 }

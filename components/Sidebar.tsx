@@ -3,7 +3,7 @@
 import { Archive, Brain, Clock3, BarChart2, BookOpen, Lightbulb, LogOut, Moon, Sun, Sparkles, Plus, X, Network } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useRef, type ElementType } from 'react'
-import { clusterColors, clusters as defaultClusters, type Cluster, type Note } from '@/lib/types'
+import { clusterColors, clusters as defaultClusters, type Note, type Tag } from '@/lib/types'
 
 export type ViewKey = 'surface' | 'all' | 'recent' | 'archived' | string
 
@@ -13,7 +13,12 @@ type Props = {
   email?: string
   now: number
   notes: Note[]
+  tags: Tag[]
+  activeTagId: string | null
   onChangeView: (view: ViewKey) => void
+  onChangeTag: (tagId: string | null) => void
+  onCreateTag: (name: string) => void
+  onDeleteTag: (tagId: string) => void
   onSignOut: () => void
 }
 
@@ -24,21 +29,11 @@ const mainItems: { key: ViewKey; label: string; icon: ElementType }[] = [
   { key: 'archived', label: 'Archived', icon: Archive },
 ]
 
-const CUSTOM_COLORS = [
-  { bg: '#FEF3C7', text: '#92400E', dot: '#F59E0B' },
-  { bg: '#FCE7F3', text: '#9D174D', dot: '#EC4899' },
-  { bg: '#E0E7FF', text: '#3730A3', dot: '#6366F1' },
-  { bg: '#D1FAE5', text: '#065F46', dot: '#10B981' },
-  { bg: '#FEE2E2', text: '#991B1B', dot: '#EF4444' },
-  { bg: '#F3E8FF', text: '#6B21A8', dot: '#A855F7' },
-]
-
-export function Sidebar({ activeView, counts, email, now, notes, onChangeView, onSignOut }: Props) {
+export function Sidebar({ activeView, counts, email, now, notes, tags, activeTagId, onChangeView, onChangeTag, onCreateTag, onDeleteTag, onSignOut }: Props) {
   const router = useRouter()
   const [dark, setDark] = useState(false)
-  const [customClusters, setCustomClusters] = useState<string[]>([])
-  const [showAddCluster, setShowAddCluster] = useState(false)
-  const [newClusterName, setNewClusterName] = useState('')
+  const [showAddTag, setShowAddTag] = useState(false)
+  const [newTagName, setNewTagName] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -48,16 +43,11 @@ export function Sidebar({ activeView, counts, email, now, notes, onChangeView, o
     const isDark = saved ? saved === 'dark' : prefersDark
     setDark(isDark)
     document.documentElement.classList.toggle('dark', isDark)
-    // Custom clusters
-    const saved2 = localStorage.getItem('custom_clusters')
-    if (saved2) {
-      try { setCustomClusters(JSON.parse(saved2)) } catch {}
-    }
   }, [])
 
   useEffect(() => {
-    if (showAddCluster) setTimeout(() => inputRef.current?.focus(), 50)
-  }, [showAddCluster])
+    if (showAddTag) setTimeout(() => inputRef.current?.focus(), 50)
+  }, [showAddTag])
 
   function toggleTheme() {
     const next = !dark
@@ -66,29 +56,13 @@ export function Sidebar({ activeView, counts, email, now, notes, onChangeView, o
     localStorage.setItem('theme', next ? 'dark' : 'light')
   }
 
-  function addCluster() {
-    const name = newClusterName.trim().toLowerCase().replace(/\s+/g, '-')
-    if (!name || customClusters.includes(name) || defaultClusters.includes(name as Cluster)) return
-    const next = [...customClusters, name]
-    setCustomClusters(next)
-    localStorage.setItem('custom_clusters', JSON.stringify(next))
-    setNewClusterName('')
-    setShowAddCluster(false)
-    onChangeView(name)
+  function submitNewTag() {
+    const name = newTagName.trim()
+    if (!name) return
+    onCreateTag(name)
+    setNewTagName('')
+    setShowAddTag(false)
   }
-
-  function removeCluster(name: string) {
-    const next = customClusters.filter(c => c !== name)
-    setCustomClusters(next)
-    localStorage.setItem('custom_clusters', JSON.stringify(next))
-    if (activeView === name) onChangeView('all')
-  }
-
-  function getCustomColor(index: number) {
-    return CUSTOM_COLORS[index % CUSTOM_COLORS.length]
-  }
-
-  const allClusters = [...defaultClusters, ...customClusters]
 
   const itemClass = (key: string) =>
     `flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition ${
@@ -134,35 +108,11 @@ export function Sidebar({ activeView, counts, email, now, notes, onChangeView, o
           })}
         </nav>
 
-        {/* Clusters */}
-        <div className="mt-6 flex items-center justify-between px-3">
+        {/* AI Clusters */}
+        <div className="mt-6 px-3">
           <span className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">Clusters</span>
-          <button onClick={() => setShowAddCluster(v => !v)}
-            className="flex h-5 w-5 items-center justify-center rounded text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-600 transition"
-            title="Add custom cluster">
-            <Plus size={13} />
-          </button>
         </div>
-
-        {/* Add cluster input */}
-        {showAddCluster && (
-          <div className="mt-2 mx-1 flex items-center gap-1">
-            <input
-              ref={inputRef}
-              value={newClusterName}
-              onChange={e => setNewClusterName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') addCluster(); if (e.key === 'Escape') setShowAddCluster(false) }}
-              placeholder="Cluster name..."
-              className="flex-1 rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1.5 text-xs outline-none focus:border-zinc-500"
-            />
-            <button onClick={addCluster} disabled={!newClusterName.trim()}
-              className="rounded-md bg-zinc-950 dark:bg-white px-2 py-1.5 text-xs text-white dark:text-zinc-950 disabled:opacity-40 hover:bg-zinc-800 transition">
-              Add
-            </button>
-          </div>
-        )}
-
-        <nav className="mt-2 space-y-1 flex-1 overflow-y-auto">
+        <nav className="mt-2 space-y-1">
           {defaultClusters.map(cluster => (
             <button key={cluster} onClick={() => onChangeView(cluster)} className={itemClass(cluster)}>
               <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: clusterColors[cluster].dot }} />
@@ -170,16 +120,56 @@ export function Sidebar({ activeView, counts, email, now, notes, onChangeView, o
               <span className="text-xs opacity-60">{counts[cluster] ?? 0}</span>
             </button>
           ))}
-          {customClusters.map((cluster, i) => {
-            const color = getCustomColor(i)
+        </nav>
+
+        {/* Tags */}
+        <div className="mt-6 flex items-center justify-between px-3">
+          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">Tags</span>
+          <button onClick={() => setShowAddTag(v => !v)}
+            className="flex h-5 w-5 items-center justify-center rounded text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-600 transition"
+            title="Create tag">
+            <Plus size={13} />
+          </button>
+        </div>
+
+        {showAddTag && (
+          <div className="mt-2 mx-1 flex items-center gap-1">
+            <input
+              ref={inputRef}
+              value={newTagName}
+              onChange={e => setNewTagName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') submitNewTag(); if (e.key === 'Escape') setShowAddTag(false) }}
+              placeholder="Tag name..."
+              className="flex-1 rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1.5 text-xs outline-none focus:border-zinc-500"
+            />
+            <button onClick={submitNewTag} disabled={!newTagName.trim()}
+              className="rounded-md bg-zinc-950 dark:bg-white px-2 py-1.5 text-xs text-white dark:text-zinc-950 disabled:opacity-40 hover:bg-zinc-800 transition">
+              Add
+            </button>
+          </div>
+        )}
+
+        <nav className="mt-2 space-y-1 flex-1 overflow-y-auto">
+          {tags.length === 0 && !showAddTag && (
+            <p className="px-3 py-2 text-xs text-zinc-400">No tags yet — click + to add one</p>
+          )}
+          {tags.map(tag => {
+            const active = activeTagId === tag.id
             return (
-              <div key={cluster} className="group flex items-center">
-                <button onClick={() => onChangeView(cluster)} className={`${itemClass(cluster)} flex-1`}>
-                  <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: color.dot }} />
-                  <span className="min-w-0 flex-1 truncate text-left capitalize">{cluster}</span>
-                  <span className="text-xs opacity-60">{counts[cluster] ?? 0}</span>
+              <div key={tag.id} className="group flex items-center">
+                <button
+                  onClick={() => onChangeTag(active ? null : tag.id)}
+                  className={`flex w-full flex-1 items-center gap-3 rounded-md px-3 py-2 text-sm transition ${
+                    active
+                      ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950'
+                      : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900'
+                  }`}
+                >
+                  <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
+                  <span className="min-w-0 flex-1 truncate text-left">{tag.name}</span>
+                  <span className="text-xs opacity-60">{tag.note_count ?? 0}</span>
                 </button>
-                <button onClick={() => removeCluster(cluster)}
+                <button onClick={() => onDeleteTag(tag.id)}
                   className="mr-1 flex h-5 w-5 shrink-0 items-center justify-center rounded text-zinc-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition">
                   <X size={11} />
                 </button>
