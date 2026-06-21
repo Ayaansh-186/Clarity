@@ -93,6 +93,8 @@ export function Sidebar({ activeView, counts, email, now, notes, tags, activeTag
           </button>
         </div>
 
+        {/* Scrollable middle section: main nav + clusters + tags */}
+        <div className="flex-1 overflow-y-auto">
         {/* Main nav */}
         <nav className="mt-6 space-y-1">
           {mainItems.map(item => {
@@ -149,7 +151,7 @@ export function Sidebar({ activeView, counts, email, now, notes, tags, activeTag
           </div>
         )}
 
-        <nav className="mt-2 space-y-1 flex-1 overflow-y-auto">
+        <nav className="mt-2 space-y-1">
           {tags.length === 0 && !showAddTag && (
             <p className="px-3 py-2 text-xs text-zinc-400">No tags yet — click + to add one</p>
           )}
@@ -178,7 +180,10 @@ export function Sidebar({ activeView, counts, email, now, notes, tags, activeTag
           })}
         </nav>
 
-        {/* Tools */}
+        </div>
+
+        {/* Tools — pinned below the scroll area, always visible */}
+        <div className="shrink-0">
         <div className="mt-4 px-3 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">Tools</div>
         <nav className="mt-2 space-y-1">
           <button onClick={() => router.push('/analyze')} className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900 transition">
@@ -198,6 +203,7 @@ export function Sidebar({ activeView, counts, email, now, notes, tags, activeTag
           <button onClick={onSignOut} className="mt-2 flex w-full items-center justify-center gap-2 rounded-md bg-zinc-100 px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 transition">
             <LogOut size={15} /> Sign out
           </button>
+        </div>
         </div>
       </aside>
 
