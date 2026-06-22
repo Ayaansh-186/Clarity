@@ -6,6 +6,8 @@ import { Pin, Search, Sparkles, X } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
 import { CaptureBar } from '@/components/CaptureBar'
 import { ChatPanel } from '@/components/ChatPanel'
+import { CommandPalette } from '@/components/CommandPalette'
+import { DueRemindersBanner } from '@/components/DueRemindersBanner'
 import { NoteCard } from '@/components/NoteCard'
 import { NoteDetail } from '@/components/NoteDetail'
 import { OnboardingModal } from '@/components/OnboardingModal'
@@ -21,6 +23,13 @@ function getBrowserClient() {
 }
 
 type UserState = { id: string; email?: string }
+type Reminder = {
+  id: string
+  remind_at: string
+  note_id: string
+  label?: string | null
+  notes: { id: string; title: string | null; raw_content: string } | null
+}
 
 export default function Home() {
   const router = useRouter()
@@ -35,6 +44,12 @@ export default function Home() {
   // ── Tags state ───────────────────────────────────────────────────────────
   const [tags, setTags] = useState<Tag[]>([])
   const [activeTagId, setActiveTagId] = useState<string | null>(null)
+
+  // ── Command palette ───────────────────────────────────────────────────────
+  const [cmdOpen, setCmdOpen] = useState(false)
+
+  // ── Reminders ─────────────────────────────────────────────────────────────
+  const [dueReminders, setDueReminders] = useState<Reminder[]>([])
 
   // Onboarding: pass null until we've loaded notes (prevents flash)
   const noteCount = loading ? null : allNotes.length
@@ -91,8 +106,29 @@ export default function Home() {
       setUser(u)
       fetchNotes(activeView, u.id)
       fetchTags(u.id)
+      // Initial reminder fetch
+      fetchDueReminders(u.id)
     })
   }, [router])
+
+  // Poll reminders every 5 minutes
+  useEffect(() => {
+    if (!user) return
+    const interval = setInterval(() => fetchDueReminders(user.id), 5 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, [user])
+
+  // Cmd+K / Ctrl+K to open command palette
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setCmdOpen(v => !v)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   useEffect(() => {
     if (!user) return
@@ -135,6 +171,26 @@ export default function Home() {
   function handleOnboardingComplete(note: Note) {
     mergeNote(note)
     completeOnboarding()
+  }
+
+  // ── Tag handlers ─────────────────────────────────────────────────────────
+  async function fetchDueReminders(uid: string) {
+    const res = await fetch(`/api/reminders?user_id=${uid}`)
+    if (!res.ok) return
+    const all: Array<{ id: string; remind_at: string; note_id: string; label?: string | null; notes: { id: string; title: string | null; raw_content: string } | null }> = await res.json()
+    // Show only reminders that are due or overdue
+    const now = Date.now()
+    setDueReminders(all.filter(r => new Date(r.remind_at).getTime() <= now))
+  }
+
+  async function dismissReminder(reminderId: string) {
+    await fetch(`/api/reminders?id=${reminderId}`, { method: 'DELETE' })
+    setDueReminders(curr => curr.filter(r => r.id !== reminderId))
+  }
+
+  function openNoteById(noteId: string) {
+    const note = allNotes.find(n => n.id === noteId)
+    if (note) setSelected(note)
   }
 
   // ── Tag handlers ─────────────────────────────────────────────────────────
@@ -290,22 +346,37 @@ export default function Home() {
                   : 'Drop the messy version. Clarity will keep sorting.'}
               </p>
             </div>
-            <div className="relative w-full sm:w-72">
-              <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-              <input
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search notes..."
-                className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-9 py-2 text-sm outline-none placeholder:text-zinc-400 focus:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:focus:border-zinc-600"
-              />
-              {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
-                  <X size={15} />
-                </button>
-              )}
+            <div className="flex items-center gap-2">
+              <div className="relative w-full sm:w-72">
+                <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                <input
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Search notes..."
+                  className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-9 py-2 text-sm outline-none placeholder:text-zinc-400 focus:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:focus:border-zinc-600"
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
+                    <X size={15} />
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={() => setCmdOpen(true)}
+                className="hidden shrink-0 items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-2 text-xs text-zinc-500 hover:bg-white hover:text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 sm:flex transition"
+                title="Open command palette"
+              >
+                <span>⌘K</span>
+              </button>
             </div>
           </div>
         </header>
+
+        <DueRemindersBanner
+          reminders={dueReminders}
+          onOpen={openNoteById}
+          onDismiss={dismissReminder}
+        />
 
         <div className="flex-1 overflow-y-auto px-5 py-6 pb-52 md:pb-6">
           <div className="mx-auto max-w-5xl">
@@ -375,8 +446,19 @@ export default function Home() {
         onUpdate={mergeNote}
         onTogglePin={togglePin}
         onTagCreated={handleTagCreated}
+        onOpenRelated={setSelected}
       />
       <ChatPanel userId={user.id} activeNote={selected} />
+
+      {/* Command Palette */}
+      {cmdOpen && (
+        <CommandPalette
+          notes={allNotes.filter(n => !n.is_archived)}
+          onOpenNote={setSelected}
+          onChangeView={changeView}
+          onClose={() => setCmdOpen(false)}
+        />
+      )}
 
       {/* Onboarding modal — only shown to first-time users */}
       {showOnboarding && (

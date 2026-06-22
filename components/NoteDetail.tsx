@@ -2,11 +2,12 @@
 
 import Image from 'next/image'
 import ReactMarkdown from 'react-markdown'
-import { Archive, Globe, GlobeLock, Loader2, Network, Sparkles, X, Copy, Check, RotateCcw, Pencil, Save, Clock, Pin } from 'lucide-react'
+import { Archive, Globe, GlobeLock, Loader2, Network, Sparkles, X, Copy, Check, RotateCcw, Pencil, Save, Clock, Pin, Bell, Link2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { clusterColors, type Note, type Tag } from '@/lib/types'
 import { VersionHistoryPanel } from '@/components/VersionHistoryPanel'
 import { TagPicker, RemovableTagChip } from '@/components/TagPicker'
+import { ReminderButton } from '@/components/ReminderButton'
 
 type Props = {
   note: Note | null
@@ -18,6 +19,7 @@ type Props = {
   onUpdate: (note: Note) => void
   onTogglePin?: (note: Note) => void
   onTagCreated: (tag: Tag) => void
+  onOpenRelated?: (note: Note) => void
 }
 
 type DiagramNode = { id: string; label: string; children?: string[] }
@@ -57,7 +59,7 @@ function MindMap({ diagram }: { diagram: Diagram }) {
   )
 }
 
-export function NoteDetail({ note, userId, allTags, onClose, onArchive, onRestore, onUpdate, onTogglePin, onTagCreated }: Props) {
+export function NoteDetail({ note, userId, allTags, onClose, onArchive, onRestore, onUpdate, onTogglePin, onTagCreated, onOpenRelated }: Props) {
   const [view, setView] = useState<'raw' | 'formatted' | 'diagram'>('raw')
   const [formatting, setFormatting] = useState(false)
   const [enhancing, setEnhancing] = useState(false)
@@ -76,11 +78,43 @@ export function NoteDetail({ note, userId, allTags, onClose, onArchive, onRestor
   const [showHistory, setShowHistory] = useState(false)
   const [removingTagId, setRemovingTagId] = useState<string | null>(null)
 
+  // Reminders state
+  const [reminder, setReminder] = useState<{ id: string; remind_at: string } | null>(null)
+
+  // Related notes state
+  const [related, setRelated] = useState<Note[]>([])
+  const [relatedLoading, setRelatedLoading] = useState(false)
+
   useEffect(() => {
     setEditing(false)
     setSaveError('')
     setShowHistory(false)
-  }, [note?.id])
+    setReminder(null)
+    setRelated([])
+
+    if (!note) return
+
+    // Fetch existing reminder for this note
+    fetch(`/api/reminders?user_id=${userId}`)
+      .then(r => r.ok ? r.json() : [])
+      .then((list: Array<{ id: string; note_id: string; remind_at: string }>) => {
+        const match = list.find(r => r.note_id === note.id)
+        setReminder(match ? { id: match.id, remind_at: match.remind_at } : null)
+      })
+      .catch(() => {})
+
+    // Fetch related notes (lazy, in background)
+    setRelatedLoading(true)
+    fetch('/api/notes/related', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note_id: note.id, user_id: userId }),
+    })
+      .then(r => r.ok ? r.json() : { related: [] })
+      .then(data => setRelated(data.related ?? []))
+      .catch(() => setRelated([]))
+      .finally(() => setRelatedLoading(false))
+  }, [note?.id, userId])
 
   if (!note) return null
   const colors = note.cluster ? clusterColors[note.cluster] : null
@@ -252,6 +286,15 @@ export function NoteDetail({ note, userId, allTags, onClose, onArchive, onRestor
                 <Pin size={16} fill={note.is_pinned ? 'currentColor' : 'none'} />
               </button>
             )}
+            {/* Reminder button */}
+            {!editing && (
+              <ReminderButton
+                noteId={note.id}
+                userId={userId}
+                existingReminder={reminder}
+                onReminderSet={setReminder}
+              />
+            )}
             {/* History button */}
             {!editing && (
               <button
@@ -392,6 +435,52 @@ export function NoteDetail({ note, userId, allTags, onClose, onArchive, onRestor
           {!editing && view === 'diagram' && !explaining && !diagram && !diagError && (
             <div className="flex flex-col items-center justify-center py-12 text-center text-zinc-400">
               <Network size={24} className="mb-3" /><p className="text-sm">Click "Explain with Diagram" to visualize this note</p>
+            </div>
+          )}
+
+          {/* Related Notes */}
+          {!editing && (
+            <div className="mt-8 border-t border-zinc-100 pt-6 dark:border-zinc-800">
+              <div className="mb-3 flex items-center gap-2">
+                <Link2 size={13} className="text-zinc-400" />
+                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">Related notes</span>
+              </div>
+              {relatedLoading && (
+                <div className="flex items-center gap-2 text-xs text-zinc-400">
+                  <Loader2 size={12} className="animate-spin" /> Finding related notes…
+                </div>
+              )}
+              {!relatedLoading && related.length === 0 && (
+                <p className="text-xs text-zinc-400">No closely related notes found yet.</p>
+              )}
+              {!relatedLoading && related.length > 0 && (
+                <div className="space-y-2">
+                  {related.map(r => {
+                    const colors = r.cluster ? clusterColors[r.cluster] : null
+                    return (
+                      <button
+                        key={r.id}
+                        onClick={() => { if (onOpenRelated) onOpenRelated(r) }}
+                        className="w-full rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-left transition hover:border-zinc-300 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:bg-zinc-800"
+                      >
+                        <div className="flex items-start gap-2">
+                          {colors && (
+                            <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: colors.dot }} />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-medium text-zinc-800 dark:text-zinc-200">
+                              {r.title ?? 'Untitled note'}
+                            </p>
+                            <p className="mt-0.5 line-clamp-2 text-xs text-zinc-500">
+                              {(r.raw_content ?? '').slice(0, 100)}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>

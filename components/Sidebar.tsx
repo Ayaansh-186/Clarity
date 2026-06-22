@@ -1,6 +1,6 @@
 'use client'
 
-import { Archive, Brain, Clock3, BarChart2, BookOpen, Lightbulb, LogOut, Moon, Sun, Sparkles, Plus, X, Network, MoreHorizontal } from 'lucide-react'
+import { Archive, Brain, CalendarDays, Clock3, BarChart2, BookOpen, Lightbulb, LogOut, Moon, Sun, Sparkles, Plus, X, Network, MoreHorizontal } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useRef, type ElementType } from 'react'
 import { clusterColors, clusters as defaultClusters, type Note, type Tag } from '@/lib/types'
@@ -196,6 +196,9 @@ export function Sidebar({ activeView, counts, email, now, notes, tags, activeTag
           <button onClick={() => router.push('/graph')} className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900 transition">
             <Network size={17} /><span className="flex-1 text-left">Knowledge Graph</span>
           </button>
+          <button onClick={() => router.push('/digest')} className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900 transition">
+            <CalendarDays size={17} /><span className="flex-1 text-left">Weekly Digest</span>
+          </button>
         </nav>
 
         {/* User */}
@@ -326,6 +329,9 @@ export function Sidebar({ activeView, counts, email, now, notes, tags, activeTag
               </button>
               <button onClick={() => { setShowMore(false); router.push('/graph') }} className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900 transition">
                 <Network size={17} /><span className="flex-1 text-left">Knowledge Graph</span>
+              </button>
+              <button onClick={() => { setShowMore(false); router.push('/digest') }} className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900 transition">
+                <CalendarDays size={17} /><span className="flex-1 text-left">Weekly Digest</span>
               </button>
             </nav>
 
