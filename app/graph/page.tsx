@@ -439,7 +439,7 @@ export default function GraphPage() {
       <header className="flex shrink-0 items-center justify-between border-b border-zinc-800 bg-zinc-950/90 px-5 py-3 backdrop-blur">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/home')}
             className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-100"
           >
             <ArrowLeft size={16} /> Back
@@ -515,7 +515,7 @@ export default function GraphPage() {
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-zinc-500">
             <p className="text-sm font-medium text-zinc-300">No clustered notes yet</p>
             <p className="text-xs">Add some notes — once AI clusters them, they'll appear here.</p>
-            <button onClick={() => router.push('/')} className="mt-3 rounded-lg bg-zinc-800 px-4 py-2 text-xs text-zinc-200 hover:bg-zinc-700 transition">
+            <button onClick={() => router.push('/home')} className="mt-3 rounded-lg bg-zinc-800 px-4 py-2 text-xs text-zinc-200 hover:bg-zinc-700 transition">
               Go capture a note
             </button>
           </div>

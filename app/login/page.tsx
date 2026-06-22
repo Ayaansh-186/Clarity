@@ -59,7 +59,7 @@ export default function LoginPage() {
       return
     }
 
-    router.replace('/')
+    router.replace('/home')
   }
 
   async function signInWithGoogle() {
@@ -67,7 +67,7 @@ export default function LoginPage() {
     setMessage(null)
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${appUrl}/` },
+      options: { redirectTo: `${appUrl}/home` },
     })
     if (error) {
       setMessage({ text: error.message, type: 'error' })

@@ -8,6 +8,7 @@ import { CaptureBar } from '@/components/CaptureBar'
 import { ChatPanel } from '@/components/ChatPanel'
 import { CommandPalette } from '@/components/CommandPalette'
 import { DueRemindersBanner } from '@/components/DueRemindersBanner'
+import { InstallBanner } from '@/components/InstallBanner'
 import { NoteCard } from '@/components/NoteCard'
 import { NoteDetail } from '@/components/NoteDetail'
 import { OnboardingModal } from '@/components/OnboardingModal'
@@ -487,6 +488,7 @@ export default function Home() {
           onDismiss={dismissOnboarding}
         />
       )}
+      <InstallBanner />
     </main>
   )
 }

@@ -150,7 +150,7 @@ export default function ChapterNotesPage() {
   return (
     <main className="flex h-screen flex-col bg-white dark:bg-zinc-950 text-zinc-950 dark:text-zinc-50">
       <header className="flex items-center gap-3 border-b border-zinc-200 dark:border-zinc-800 px-4 py-3 shrink-0">
-        <button onClick={() => router.push('/')} className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition">
+        <button onClick={() => router.push('/home')} className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition">
           <ArrowLeft size={16} /> Back
         </button>
         <div className="flex-1">
