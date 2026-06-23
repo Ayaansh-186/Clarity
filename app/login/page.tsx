@@ -85,7 +85,7 @@ export default function LoginPage() {
               <Sparkles size={20} />
             </div>
             <div>
-              <h1 className="text-xl font-semibold">Clarity</h1>
+              <h1 className="text-xl font-semibold">ClearMind</h1>
               <p className="text-sm text-zinc-500">
                 {mode === 'signin' ? 'Sign in to your notes'
                   : mode === 'signup' ? 'Create your account'
