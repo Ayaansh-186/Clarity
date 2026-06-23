@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Pin, Search, Sparkles, X } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
+import { BulkActionBar } from '@/components/BulkActionBar'
 import { CaptureBar } from '@/components/CaptureBar'
 import { ChatPanel } from '@/components/ChatPanel'
 import { CommandPalette } from '@/components/CommandPalette'
@@ -51,7 +52,65 @@ export default function Home() {
   const [tags, setTags] = useState<Tag[]>([])
   const [activeTagId, setActiveTagId] = useState<string | null>(null)
 
-  // ── Command palette ───────────────────────────────────────────────────────
+  // ── Bulk selection ────────────────────────────────────────────────────────
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const inSelectMode = selectedIds.size > 0
+
+  function toggleSelect(note: Note) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(note.id)) next.delete(note.id)
+      else next.add(note.id)
+      return next
+    })
+  }
+
+  function clearSelection() { setSelectedIds(new Set()) }
+
+  async function bulkArchive() {
+    const ids = [...selectedIds]
+    await Promise.all(ids.map(id =>
+      fetch(`/api/notes/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_archived: true }) })
+    ))
+    setNotes(curr => curr.filter(n => !ids.includes(n.id)))
+    setAllNotes(curr => curr.map(n => ids.includes(n.id) ? { ...n, is_archived: true } : n))
+    clearSelection()
+  }
+
+  async function bulkDelete() {
+    const ids = [...selectedIds]
+    await Promise.all(ids.map(id => fetch(`/api/notes/${id}`, { method: 'DELETE' })))
+    setNotes(curr => curr.filter(n => !ids.includes(n.id)))
+    setAllNotes(curr => curr.filter(n => !ids.includes(n.id)))
+    clearSelection()
+  }
+
+  async function bulkTagAll(tagId: string) {
+    const ids = [...selectedIds]
+    await Promise.all(ids.map(id =>
+      fetch(`/api/notes/${id}/tags`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tag_id: tagId }) })
+    ))
+    clearSelection()
+  }
+
+  async function bulkExport(format: 'md' | 'txt') {
+    if (!user) return
+    const ids = [...selectedIds]
+    const res = await fetch('/api/export', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user.id, note_ids: ids, format }),
+    })
+    if (!res.ok) return
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `clarity-export-${new Date().toISOString().slice(0, 10)}.${format}`
+    a.click()
+    URL.revokeObjectURL(url)
+    clearSelection()
+  }
   const [cmdOpen, setCmdOpen] = useState(false)
   const [kbdHint, setKbdHint] = useState('⌘K')
 
@@ -335,6 +394,21 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-white text-zinc-950 md:pl-[260px] dark:bg-zinc-950 dark:text-zinc-50">
+      {/* Bulk action bar — replaces header when notes are selected */}
+      {inSelectMode && (
+        <BulkActionBar
+          count={selectedIds.size}
+          selectedIds={[...selectedIds]}
+          allTags={tags}
+          userId={user.id}
+          onArchive={bulkArchive}
+          onDelete={bulkDelete}
+          onExport={bulkExport}
+          onTagAll={bulkTagAll}
+          onClear={clearSelection}
+        />
+      )}
+
       <Sidebar
         activeView={activeView}
         counts={counts}
@@ -426,7 +500,8 @@ export default function Home() {
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                       {pinnedNotes.map(note => (
-                        <NoteCard key={note.id} note={note} onOpen={setSelected} onTogglePin={togglePin} />
+                        <NoteCard key={note.id} note={note} onOpen={setSelected} onTogglePin={togglePin}
+                          selectable={inSelectMode} selected={selectedIds.has(note.id)} onSelect={toggleSelect} />
                       ))}
                     </div>
                     {unpinnedNotes.length > 0 && (
@@ -443,7 +518,8 @@ export default function Home() {
                 {unpinnedNotes.length > 0 && (
                   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {unpinnedNotes.map(note => (
-                      <NoteCard key={note.id} note={note} onOpen={setSelected} onTogglePin={togglePin} />
+                      <NoteCard key={note.id} note={note} onOpen={setSelected} onTogglePin={togglePin}
+                        selectable={inSelectMode} selected={selectedIds.has(note.id)} onSelect={toggleSelect} />
                     ))}
                   </div>
                 )}

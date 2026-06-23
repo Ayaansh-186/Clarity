@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import ReactMarkdown from 'react-markdown'
-import { Archive, Globe, GlobeLock, Loader2, Network, Sparkles, X, Copy, Check, RotateCcw, Pencil, Save, Clock, Pin, Bell, Link2 } from 'lucide-react'
+import { Archive, Download, Globe, GlobeLock, Loader2, Network, Sparkles, X, Copy, Check, RotateCcw, Pencil, Save, Clock, Pin, Bell, Link2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { clusterColors, type Note, type Tag } from '@/lib/types'
 import { VersionHistoryPanel } from '@/components/VersionHistoryPanel'
@@ -76,6 +76,7 @@ export function NoteDetail({ note, userId, allTags, onClose, onArchive, onRestor
   const [editContent, setEditContent] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const [showExport, setShowExport] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [removingTagId, setRemovingTagId] = useState<string | null>(null)
 
@@ -286,6 +287,37 @@ export function NoteDetail({ note, userId, allTags, onClose, onArchive, onRestor
               >
                 <Pin size={16} fill={note.is_pinned ? 'currentColor' : 'none'} />
               </button>
+            )}
+            {/* Export button */}
+            {!editing && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowExport(v => !v)}
+                  className="flex h-9 w-9 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition"
+                  aria-label="Export note"
+                  title="Export note"
+                >
+                  <Download size={16} />
+                </button>
+                {showExport && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowExport(false)} />
+                    <div className="absolute right-0 top-10 z-50 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
+                      {(['md', 'txt'] as const).map(fmt => (
+                        <a
+                          key={fmt}
+                          href={`/api/export?note_id=${note.id}&user_id=${userId}&format=${fmt}`}
+                          download
+                          onClick={() => setShowExport(false)}
+                          className="flex items-center gap-2 whitespace-nowrap px-4 py-2.5 text-xs text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900 transition"
+                        >
+                          {fmt === 'md' ? '📄 Markdown (.md)' : '📃 Plain text (.txt)'}
+                        </a>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             )}
             {/* Reminder button */}
             {!editing && (
