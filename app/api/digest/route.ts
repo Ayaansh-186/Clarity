@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
         `- [${n.cluster ?? 'misc'}] "${n.title ?? 'Untitled'}" — ${(n.raw_content ?? '').slice(0, 100)}...`
       ).join('\n')
 
-    const prompt = `You are Clarity, a thoughtful AI note assistant. Generate a weekly digest for a user.
+    const prompt = `You are ClearMind, a thoughtful AI note assistant. Generate a weekly digest for a user.
 
 RECENT (this week, ${recentNotes?.length ?? 0} notes):
 ${formatNotes(recentNotes)}

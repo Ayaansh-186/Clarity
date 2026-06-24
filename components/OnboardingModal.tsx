@@ -143,10 +143,10 @@ export function OnboardingModal({ userId, onComplete, onDismiss }: Props) {
               <Sparkles size={28} />
             </div>
             <h2 className="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
-              Welcome to Clarity
+              Welcome to ClearMind
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
-              Clarity turns messy thoughts into structured, searchable notes — automatically. Let&apos;s take 30 seconds to see it work.
+              ClearMind turns messy thoughts into structured, searchable notes — automatically. Let&apos;s take 30 seconds to see it work.
             </p>
 
             <div className="mt-6 grid grid-cols-3 gap-3 text-left">
@@ -289,7 +289,7 @@ export function OnboardingModal({ userId, onComplete, onDismiss }: Props) {
                 Clustered automatically ✨
               </h2>
               <p className="mt-1.5 text-sm text-zinc-500 dark:text-zinc-400">
-                Clarity read your note and organised it — no tagging needed.
+                ClearMind read your note and organised it — no tagging needed.
               </p>
             </div>
 

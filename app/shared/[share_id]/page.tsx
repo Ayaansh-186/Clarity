@@ -174,7 +174,7 @@ export default function SharedNotePage() {
             <div className="flex h-7 w-7 items-center justify-center rounded-md bg-zinc-950 dark:bg-white text-white dark:text-zinc-950">
               <Sparkles size={14} />
             </div>
-            <span className="font-semibold text-sm">Clarity</span>
+            <span className="font-semibold text-sm">ClearMind</span>
             <span className="text-zinc-300 dark:text-zinc-600">·</span>
             <span className="text-sm text-zinc-500">Shared note</span>
           </div>
@@ -195,7 +195,7 @@ export default function SharedNotePage() {
         {/* Note title */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold">{note?.title ?? 'Shared Note'}</h1>
-          <p className="mt-1 text-sm text-zinc-500">Shared via Clarity · {relTime(note?.created_at ?? '')}</p>
+          <p className="mt-1 text-sm text-zinc-500">Shared via ClearMind · {relTime(note?.created_at ?? '')}</p>
         </div>
 
         {/* Note content */}

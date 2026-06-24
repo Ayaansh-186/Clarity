@@ -104,7 +104,7 @@ export function ChatPanel({ userId, activeNote }: Props) {
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
             <Sparkles size={14} />
           </div>
-          <span className="text-sm font-semibold">Clarity AI</span>
+          <span className="text-sm font-semibold">ClearMind AI</span>
         </div>
         <button onClick={() => setOpen(false)} className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-900 dark:hover:text-zinc-200">
           <X size={16} />

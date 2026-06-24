@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     })
 
     const combined = [
-      `# Clarity Export`,
+      `# ClearMind Export`,
       `*${notes.length} notes · Exported ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}*`,
       '',
       '---',

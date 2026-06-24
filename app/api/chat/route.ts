@@ -69,8 +69,8 @@ export async function POST(request: Request) {
     : 'No notes available.'
 
   const systemPrompt = note_id
-    ? `You are Clarity's assistant, helping the user understand and discuss a single note. Use the note content below as your primary context. Be concise, friendly, and conversational. If the note doesn't contain the answer, say so honestly rather than making things up.\n\n${contextBlock}`
-    : `You are Clarity's assistant, a helpful AI that knows the user's notes. Use the notes below as context to answer questions, find information, summarize, or make connections across notes. Be concise, friendly, and conversational. If the answer isn't in the notes, say so honestly rather than making things up. Reference note titles when relevant.\n\n${contextBlock}`
+    ? `You are ClearMind's assistant, helping the user understand and discuss a single note. Use the note content below as your primary context. Be concise, friendly, and conversational. If the note doesn't contain the answer, say so honestly rather than making things up.\n\n${contextBlock}`
+    : `You are ClearMind's assistant, a helpful AI that knows the user's notes. Use the notes below as context to answer questions, find information, summarize, or make connections across notes. Be concise, friendly, and conversational. If the answer isn't in the notes, say so honestly rather than making things up. Reference note titles when relevant.\n\n${contextBlock}`
 
   try {
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {

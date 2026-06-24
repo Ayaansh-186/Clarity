@@ -52,11 +52,11 @@ export default function ResetPasswordPage() {
     <main className="grid min-h-screen place-items-center bg-zinc-50 px-4 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
       <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mb-8 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl text-white" style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}>
             <Sparkles size={20} />
           </div>
           <div>
-            <h1 className="text-xl font-semibold">Clarity</h1>
+            <h1 className="text-xl font-semibold">ClearMind</h1>
             <p className="text-sm text-zinc-500">Set a new password</p>
           </div>
         </div>

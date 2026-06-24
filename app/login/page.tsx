@@ -16,7 +16,7 @@ export default function LoginPage() {
   const [mode, setMode] = useState<Mode>('signin')
 
   const supabase = createBrowserSupabase()
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin
+  
 
   function switchMode(m: Mode) {
     setMode(m)
@@ -29,7 +29,8 @@ export default function LoginPage() {
     setMessage(null)
 
     if (mode === 'forgot') {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const appUrl = typeof window !== "undefined" ? (process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin) : (process.env.NEXT_PUBLIC_APP_URL ?? "")
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${appUrl}/reset-password`,
       })
       setLoading(false)
@@ -65,9 +66,10 @@ export default function LoginPage() {
   async function signInWithGoogle() {
     setLoading(true)
     setMessage(null)
+    const appUrl2 = typeof window !== "undefined" ? (process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin) : (process.env.NEXT_PUBLIC_APP_URL ?? "")
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${appUrl}/home` },
+      options: { redirectTo: `${appUrl2}/home` },
     })
     if (error) {
       setMessage({ text: error.message, type: 'error' })
@@ -76,12 +78,12 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-zinc-50 px-4 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
+    <main className="grid min-h-screen place-items-center px-4" style={{ background: "var(--background)", color: "var(--foreground)" }}>
       <div className="w-full max-w-sm">
         <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           {/* Logo */}
           <div className="mb-8 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl text-white" style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}>
               <Sparkles size={20} />
             </div>
             <div>
@@ -166,7 +168,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-950 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-60 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+              className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60" style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}
             >
               {mode === 'signin' && <><LogIn size={16} /> {loading ? 'Signing in...' : 'Sign in'}</>}
               {mode === 'signup' && <><UserPlus size={16} /> {loading ? 'Creating account...' : 'Create account'}</>}

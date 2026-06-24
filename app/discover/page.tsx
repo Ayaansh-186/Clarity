@@ -104,7 +104,7 @@ export default function DiscoverPage() {
           </button>
           <div>
             <h1 className="text-lg font-semibold tracking-tight">Discover</h1>
-            <p className="text-xs text-zinc-500">Public notes shared by the Clarity community</p>
+            <p className="text-xs text-zinc-500">Public notes shared by the ClearMind community</p>
           </div>
         </div>
 

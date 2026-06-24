@@ -146,7 +146,7 @@ export default function DigestPage() {
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
                 <Sparkles size={14} />
               </div>
-              <span className="text-sm font-semibold">Clarity AI</span>
+              <span className="text-sm font-semibold">ClearMind AI</span>
               <span className="ml-auto text-xs text-zinc-400">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
             </div>
             <div className="prose-sm text-zinc-700 dark:text-zinc-300 [&_h1]:text-base [&_h1]:font-semibold [&_h1]:mb-2 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:mb-2 [&_h3]:text-sm [&_h3]:font-medium [&_h3]:mb-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-3 [&_strong]:font-semibold [&_strong]:text-zinc-900 dark:[&_strong]:text-zinc-100 leading-7 text-sm">
