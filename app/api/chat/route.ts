@@ -104,10 +104,11 @@ export async function POST(request: Request) {
 
         if (notes && notes.length > 0) {
           // Re-order to match similarity ranking (Supabase .in() doesn't preserve order)
-          const noteMap = new Map(notes.map(n => [n.id ?? '', n]))
+          const noteMap = new Map(notes.map(n => [n.id as string, n]))
           contextNotes = matchedIds
             .map(id => noteMap.get(id))
-            .filter((n): n is NoteContext => n !== undefined)
+            .filter((n): n is NonNullable<typeof n> => n !== undefined)
+            .map(({ id: _id, ...rest }) => rest as NoteContext)
         }
       }
     }
