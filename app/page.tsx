@@ -48,11 +48,6 @@ const features = [
   },
 ]
 
-const testimonials = [
-  { quote: "I stopped losing ideas the moment I started using this.", name: 'Designer, Berlin' },
-  { quote: "It's like having a second brain that actually stays organised.", name: 'Founder, SF' },
-  { quote: "Voice capture + auto-clustering changed how I think.", name: 'PhD student, London' },
-]
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -227,7 +222,7 @@ export default function LandingPage() {
                   className="ml-3 flex-1 rounded-lg py-1 text-xs text-center"
                   style={{ background: 'var(--land-bg)', color: 'var(--land-muted)' }}
                 >
-                  clearmind.app/home
+                  clarity-delta-two.vercel.app/home
                 </span>
               </div>
               {/* Fake note cards */}
@@ -257,20 +252,6 @@ export default function LandingPage() {
                 ))}
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* ── Social proof ── */}
-        <section className="px-5 pb-20">
-          <div className="mx-auto grid max-w-3xl gap-4 sm:grid-cols-3">
-            {testimonials.map((t) => (
-              <div key={t.name} className="land-card p-5">
-                <p className="mb-3 text-sm leading-relaxed" style={{ color: 'var(--land-ink)' }}>
-                  &ldquo;{t.quote}&rdquo;
-                </p>
-                <p className="text-xs font-medium" style={{ color: 'var(--land-muted)' }}>— {t.name}</p>
-              </div>
-            ))}
           </div>
         </section>
 
