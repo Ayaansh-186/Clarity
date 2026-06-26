@@ -7,10 +7,28 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/login'],
-        disallow: ['/api/', '/analyze', '/chapter-notes', '/graph', '/digest', '/shared/'],
+        allow: [
+          '/',
+          '/login',
+          '/how-it-works',
+          '/ai-notes-app',
+          '/second-brain',
+          '/notion-alternative',
+          '/discover',
+        ],
+        disallow: [
+          '/api/',
+          '/home',
+          '/analyze',
+          '/chapter-notes',
+          '/graph',
+          '/digest',
+          '/shared/',
+          '/reset-password',
+        ],
       },
     ],
     sitemap: `${siteUrl}/sitemap.xml`,
+    host: siteUrl,
   }
 }
